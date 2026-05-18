@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import NavBar        from '@/components/NavBar'
-import SearchScreen  from '@/components/SearchScreen'
-import ResultsScreen from '@/components/ResultsScreen'
-import { ChecklistFlow } from '@/components/Checklist'
-import { searchPermit }  from '@/lib/supabase'
+import NavBar from '../components/NavBar'
+import SearchScreen from '../components/SearchScreen'
+import ResultsScreen from '../components/ResultsScreen'
+import { ChecklistFlow } from '../components/Checklist'
+import { searchPermit } from '../lib/supabase'
 
 export default function Page() {
   // ── Shared UI state ──────────────────────────────────────────────────────
