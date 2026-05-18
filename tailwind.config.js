@@ -1,8 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    './app/**/*.{js,jsx}',
-    './components/**/*.{js,jsx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -14,8 +15,8 @@ export default {
         slideUp: { '0%': { opacity: '0', transform: 'translateY(16px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
       },
       animation: {
-        'fade-in':  'fadeIn 0.35s ease-out',
-        'slide-up': 'slideUp 0.4s ease-out',
+        'fade-in':    'fadeIn 0.35s ease-out',
+        'slide-up':   'slideUp 0.4s ease-out',
         'slide-up-1': 'slideUp 0.4s ease-out 0.08s both',
         'slide-up-2': 'slideUp 0.4s ease-out 0.16s both',
         'slide-up-3': 'slideUp 0.4s ease-out 0.24s both',
