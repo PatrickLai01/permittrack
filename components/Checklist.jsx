@@ -9,7 +9,7 @@ import {
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
-const CHECKLIST_CITIES = ['Los Gatos', 'San Jose', 'San Mateo', 'Santa Clara']
+const CHECKLIST_CITIES = ['Alameda', 'Los Gatos', 'San Jose', 'San Mateo', 'Santa Clara']
 
 const PROJECT_TYPES = [
   'Residential HVAC — Gas to Heat Pump Conversion',
@@ -22,6 +22,11 @@ const PROJECT_TYPES = [
 ]
 
 const CITY_META = {
+  'Alameda': {
+    noteColor: 'blue',
+    note: 'Alameda uses the CSS (Community Development — Permit Center) for permit applications. Online submissions available at alamedaca.gov.',
+    submitVia: 'alamedaca.gov/permits',
+  },
   'Los Gatos': {
     noteColor: 'amber',
     note: 'Los Gatos uses a third-party plan reviewer. Allow 2–3 weeks for plan check.',
@@ -65,6 +70,7 @@ const SPECIFIC = {
 }
 
 const LICENSE = {
+  'Alameda':     'Proof of City of Alameda Business License',
   'Los Gatos':   'Proof of City of Los Gatos Business License',
   'San Jose':    'Proof of San Jose Business License',
   'San Mateo':   'Proof of San Mateo Business License',
@@ -226,6 +232,7 @@ function CityNote({ city }) {
   if (!meta) return null
   const palette = {
     amber: 'bg-amber-50 border-amber-300 text-amber-800',
+    blue:  'bg-blue-50 border-blue-300 text-blue-800',
     green: 'bg-green-50 border-green-300 text-green-800',
     slate: 'bg-slate-100 border-slate-300 text-slate-600',
   }

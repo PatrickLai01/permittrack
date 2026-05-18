@@ -3,7 +3,7 @@
 import { Building2, Search, MapPin, ClipboardList, Loader2, ChevronDown } from 'lucide-react'
 import { CITIES } from '../lib/supabase'
 
-const CITY_BADGES = ['Los Gatos', 'San Jose', 'San Mateo', 'Santa Clara']
+const CITY_BADGES = ['Alameda', 'Los Gatos', 'San Jose', 'San Mateo', 'Santa Clara']
 
 export default function SearchScreen({
   query, setQuery,
@@ -141,7 +141,7 @@ export default function SearchScreen({
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          Live data — 55,553 permits across Bay Area cities
+          Live data — 59,847 permits across Bay Area cities
         </p>
       </div>
     </main>
