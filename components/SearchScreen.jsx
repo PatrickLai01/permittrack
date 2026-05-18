@@ -1,7 +1,7 @@
 'use client'
 
 import { Building2, Search, MapPin, ClipboardList, Loader2, ChevronDown } from 'lucide-react'
-import { CITIES } from '@/lib/supabase'
+import { CITIES } from '../lib/supabase'
 
 const CITY_BADGES = ['Los Gatos', 'San Jose', 'San Mateo', 'Santa Clara']
 

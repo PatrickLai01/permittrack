@@ -6,7 +6,7 @@ import {
   FileText, Calendar, MapPin, Hash, LayoutDashboard, FolderOpen,
   Globe, Settings, Phone, ArrowRight,
 } from 'lucide-react'
-import { getCityName } from '@/lib/supabase'
+import { getCityName } from '../lib/supabase'
 
 // ── Hardcoded sections (same for all permits) ─────────────────────────────────
 
