@@ -1,0 +1,407 @@
+'use client'
+
+import { useMemo } from 'react'
+import {
+  Search, CheckCircle2, Clock, AlertTriangle, ChevronRight,
+  FileText, Calendar, MapPin, Hash, LayoutDashboard, FolderOpen,
+  Globe, Settings, Phone, ArrowRight,
+} from 'lucide-react'
+import { getCityName } from '@/lib/supabase'
+
+// ── Hardcoded sections (same for all permits) ─────────────────────────────────
+
+const HARDCODED_DOCS = [
+  { icon: 'check', label: 'Building Permit Application',        detail: 'Submitted 04/01/2026' },
+  { icon: 'check', label: 'Mechanical Permit (MEP)',            detail: 'Submitted 04/01/2026' },
+  { icon: 'check', label: 'Title 24 / CF-1R Energy Report',     detail: 'Submitted 04/08/2026' },
+  { icon: 'check', label: 'Equipment Specifications',           detail: 'Submitted 04/08/2026' },
+  { icon: 'warn',  label: 'HERS Verification',                  detail: 'Required before Final Inspection' },
+  { icon: 'clock', label: 'Final Inspection Request',           detail: 'Not yet submitted' },
+]
+
+const HARDCODED_COMMENTS = [
+  {
+    date: 'April 15, 2026',
+    status: 'resolved',
+    original: 'Verify refrigerant charge per Title 24 HERS protocol CF-2R-MCH-01',
+    plain: 'Inspector needs proof that refrigerant was measured correctly during installation. Your HVAC tech needs to complete a HERS verification form.',
+  },
+  {
+    date: 'April 22, 2026',
+    status: 'action',
+    original: 'Final inspection required prior to closeout. Schedule with Building Division.',
+    plain: 'You need to book a final inspection before this permit can be closed out. Call the Building Division to schedule.',
+  },
+]
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmt(dateStr) {
+  if (!dateStr) return null
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
+}
+
+function fmtShort(dateStr) {
+  if (!dateStr) return null
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: '2-digit', day: '2-digit', year: 'numeric',
+  })
+}
+
+function statusStyle(status) {
+  const s = (status ?? '').toLowerCase()
+  if (s.includes('final') || s.includes('complet') || s.includes('approv'))
+    return { bg: 'bg-green-100', border: 'border-green-300', text: 'text-green-700' }
+  if (s.includes('issued'))
+    return { bg: 'bg-green-100', border: 'border-green-300', text: 'text-green-700' }
+  if (s.includes('review') || s.includes('check') || s.includes('process'))
+    return { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700' }
+  if (s.includes('expire') || s.includes('void') || s.includes('cancel') || s.includes('denied'))
+    return { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700' }
+  return { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700' }
+}
+
+function buildTimeline(permit) {
+  const a = !!permit.applied_date
+  const iv = !!permit.issued_date
+  const f = !!permit.finalized_date
+
+  // Which step is "current"?
+  let curr = 0
+  if (a && !iv && !f) curr = 1   // submitted, now in plan check
+  if (iv && !f)       curr = 2   // issued
+  if (f)              curr = 4   // fully finaled
+
+  const state = (idx) => idx < curr ? 'done' : idx === curr ? 'current' : 'pending'
+
+  return [
+    {
+      label: 'Submitted',
+      date: fmt(permit.applied_date),
+      state: a ? state(0) : 'pending',
+      note: a ? null : 'Pending',
+    },
+    {
+      label: 'Plan Check',
+      date: null,
+      state: state(1),
+      note: curr === 1 ? 'In Review' : curr < 1 ? 'Pending' : null,
+    },
+    {
+      label: 'Issued',
+      date: fmt(permit.issued_date),
+      state: iv ? state(2) : 'pending',
+      note: iv ? null : 'Pending',
+    },
+    {
+      label: 'Inspection',
+      date: null,
+      state: f ? 'done' : 'pending',
+      note: f ? null : iv ? 'Schedule Required' : 'Pending',
+    },
+    {
+      label: 'Finaled',
+      date: fmt(permit.finalized_date),
+      state: f ? 'current' : 'pending',
+      note: f ? null : 'Pending',
+    },
+  ]
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function InfoField({ icon: Icon, label, value }) {
+  if (!value) return null
+  return (
+    <div className="flex items-start gap-2.5">
+      <Icon size={15} className="text-slate-400 mt-0.5 flex-shrink-0" />
+      <div>
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-medium text-slate-800 mt-0.5">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function SectionHeader({ title, subtitle }) {
+  return (
+    <h2 className="text-base font-bold text-[#1e3a5f] leading-tight">
+      {title}
+      {subtitle && <span className="text-slate-400 font-normal"> — {subtitle}</span>}
+    </h2>
+  )
+}
+
+function TimelineStep({ step, index, total }) {
+  const isDone    = step.state === 'done'
+  const isCurrent = step.state === 'current'
+  const isLast    = index === total - 1
+
+  return (
+    <div className="flex flex-col items-center flex-1 relative">
+      {/* Left connector */}
+      {index > 0 && (
+        <div className={`absolute top-5 right-1/2 left-0 h-0.5 -translate-y-1/2
+          ${isDone || isCurrent ? 'bg-[#22c55e]' : 'bg-slate-200'}`}
+        />
+      )}
+      {/* Right connector */}
+      {!isLast && (
+        <div className={`absolute top-5 left-1/2 right-0 h-0.5 -translate-y-1/2
+          ${isDone ? 'bg-[#22c55e]' : 'bg-slate-200'}`}
+        />
+      )}
+
+      {/* Circle */}
+      <div className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all
+        ${isDone    ? 'bg-[#22c55e] border-[#22c55e] shadow-md shadow-green-200' : ''}
+        ${isCurrent ? 'bg-[#1e3a5f] border-[#1e3a5f] shadow-md shadow-blue-200' : ''}
+        ${!isDone && !isCurrent ? 'bg-white border-slate-300' : ''}`}
+      >
+        {isDone    && <CheckCircle2 size={18} className="text-white" strokeWidth={2.5} />}
+        {isCurrent && <div className="w-3 h-3 rounded-full bg-white" />}
+        {!isDone && !isCurrent && <div className="w-3 h-3 rounded-full bg-slate-300" />}
+      </div>
+
+      {/* Label */}
+      <div className="mt-3 text-center px-1">
+        <p className={`text-xs font-bold leading-tight
+          ${isDone ? 'text-[#22c55e]' : isCurrent ? 'text-[#1e3a5f]' : 'text-slate-400'}`}
+        >
+          {step.label}
+        </p>
+        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+          {step.date ?? step.note}
+        </p>
+        {isCurrent && (
+          <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold
+                           bg-[#1e3a5f] text-white uppercase tracking-wide">
+            Current
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DocRow({ doc }) {
+  const icons = {
+    check: <CheckCircle2 size={17} className="text-[#22c55e] flex-shrink-0 mt-0.5" strokeWidth={2.5} />,
+    warn:  <AlertTriangle size={17} className="text-amber-500 flex-shrink-0 mt-0.5" strokeWidth={2.5} />,
+    clock: <Clock size={17} className="text-slate-400 flex-shrink-0 mt-0.5" strokeWidth={2} />,
+  }
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
+      {icons[doc.icon]}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-800 leading-snug">{doc.label}</p>
+        <p className={`text-xs mt-0.5
+          ${doc.icon === 'check' ? 'text-slate-500' : ''}
+          ${doc.icon === 'warn'  ? 'text-amber-600 font-medium' : ''}
+          ${doc.icon === 'clock' ? 'text-slate-400' : ''}`}
+        >
+          {doc.detail}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function CommentCard({ comment }) {
+  const isResolved = comment.status === 'resolved'
+  return (
+    <div className={`rounded-xl border p-4 md:p-5
+      ${isResolved ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}
+    >
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Calendar size={13} className="text-slate-400" />
+          <span className="text-xs text-slate-500 font-medium">{comment.date}</span>
+        </div>
+        {isResolved ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full
+                           bg-green-100 border border-green-300 text-green-700 text-xs font-bold">
+            <CheckCircle2 size={11} strokeWidth={2.5} /> Resolved
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full
+                           bg-amber-100 border border-amber-300 text-amber-700 text-xs font-bold">
+            <AlertTriangle size={11} strokeWidth={2.5} /> Action Required
+          </span>
+        )}
+      </div>
+
+      <div className="mb-3 bg-white/70 rounded-lg p-3 border border-slate-200">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Original Comment</p>
+        <p className="text-xs text-slate-600 italic leading-relaxed">"{comment.original}"</p>
+      </div>
+
+      <div className={`rounded-lg p-3 ${isResolved ? 'bg-green-100/60' : 'bg-amber-100/60'}`}>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-slate-500">Plain English</p>
+        <p className="text-sm text-slate-700 leading-relaxed">{comment.plain}</p>
+      </div>
+
+      {!isResolved && (
+        <button className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                           bg-[#1e3a5f] text-white text-sm font-semibold
+                           hover:bg-[#254d7a] active:scale-[0.98] transition-all shadow-sm">
+          <Phone size={14} />
+          Schedule Inspection
+          <ArrowRight size={14} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── Desktop sidebar ───────────────────────────────────────────────────────────
+
+function Sidebar() {
+  return (
+    <aside className="hidden lg:flex flex-col fixed top-14 left-0 bottom-0 w-56
+                      bg-[#1e3a5f] border-r border-[#162d4a] z-40">
+      <div className="flex-1 py-6 px-3">
+        <p className="text-[10px] font-bold text-blue-300/60 uppercase tracking-widest px-3 mb-3">
+          Navigation
+        </p>
+        {[
+          { icon: LayoutDashboard, label: 'Dashboard' },
+          { icon: Search,          label: 'Search',  active: true },
+          { icon: FolderOpen,      label: 'My Permits' },
+          { icon: Globe,           label: 'Cities' },
+          { icon: Settings,        label: 'Settings' },
+        ].map(({ icon: Icon, label, active }) => (
+          <button
+            key={label}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-colors
+              ${active ? 'bg-white/15 text-white' : 'text-blue-200/70 hover:bg-white/8 hover:text-white'}`}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="p-4 border-t border-white/10">
+        <p className="text-[10px] text-blue-300/50 text-center">PermitTrack v2.0</p>
+      </div>
+    </aside>
+  )
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
+export default function ResultsScreen({ permit, onBack }) {
+  const timeline = useMemo(() => buildTimeline(permit), [permit])
+  const cityName = getCityName(permit.city_id)
+  const ss = statusStyle(permit.status)
+
+  return (
+    <div className="animate-fade-in">
+      <Sidebar />
+
+      <div className="lg:ml-56 pt-14">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
+
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 mb-6 animate-slide-up">
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1e3a5f]
+                         hover:text-[#254d7a] transition-colors"
+            >
+              <Search size={14} />
+              New Search
+            </button>
+            <ChevronRight size={14} className="text-slate-300" />
+            <span className="text-sm text-slate-500 font-medium">Permit Results</span>
+          </div>
+
+          {/* ── Permit card ─────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-5 animate-slide-up">
+            <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1e3a5f]/8">
+                  <FileText size={18} className="text-[#1e3a5f]" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Permit Number
+                  </p>
+                  <p className="text-xl font-bold text-[#1e3a5f] tracking-tight">
+                    {permit.permit_number}
+                  </p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                               ${ss.bg} border ${ss.border} ${ss.text} font-bold text-sm`}>
+                <CheckCircle2 size={14} strokeWidth={2.5} />
+                {permit.status ?? 'Unknown'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <InfoField icon={MapPin}   label="Address"      value={permit.address} />
+              <InfoField icon={Globe}    label="City"         value={cityName} />
+              <InfoField icon={Calendar} label="Date Applied" value={fmtShort(permit.applied_date)} />
+              <InfoField icon={Calendar} label="Date Issued"  value={fmtShort(permit.issued_date)} />
+              {permit.finalized_date && (
+                <InfoField icon={Calendar} label="Date Finaled" value={fmtShort(permit.finalized_date)} />
+              )}
+            </div>
+
+            {permit.description && (
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Description
+                </p>
+                <p className="text-sm text-slate-700 leading-relaxed">{permit.description}</p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Timeline ────────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-5 animate-slide-up-1">
+            <SectionHeader title="Permit Status Timeline" />
+            <div className="flex items-start mt-6 mb-2 overflow-x-auto pb-2">
+              {timeline.map((step, i) => (
+                <TimelineStep key={step.label} step={step} index={i} total={timeline.length} />
+              ))}
+            </div>
+          </div>
+
+          {/* ── Documents ───────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-5 animate-slide-up-2">
+            <SectionHeader title="Required Documents" subtitle={`${cityName} HVAC`} />
+            <div className="mt-4">
+              {HARDCODED_DOCS.map((doc) => (
+                <DocRow key={doc.label} doc={doc} />
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 mt-4 flex items-start gap-1.5">
+              <span className="mt-0.5">ℹ️</span>
+              Document requirements verified against {cityName} Building Division standards.
+            </p>
+          </div>
+
+          {/* ── Inspector comments ───────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-8 animate-slide-up-3">
+            <SectionHeader title="Inspector Comments" subtitle="Plain English" />
+            <div className="mt-4 flex flex-col gap-4">
+              {HARDCODED_COMMENTS.map((c, i) => (
+                <CommentCard key={i} comment={c} />
+              ))}
+            </div>
+          </div>
+
+          <footer className="text-center py-4 text-xs text-slate-400 border-t border-slate-200">
+            Powered by{' '}
+            <span className="font-semibold text-[#1e3a5f]">Permit</span>
+            <span className="font-semibold text-[#22c55e]">Track</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+  )
+}
