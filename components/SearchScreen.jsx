@@ -1,9 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Building2, Search, MapPin, ClipboardList, Loader2, ChevronDown } from 'lucide-react'
-import { CITIES } from '../lib/supabase'
-
-const CITY_BADGES = ['Alameda', 'Los Gatos', 'San Jose', 'San Mateo', 'Santa Clara']
+import { CITIES, getDistinctCounties } from '../lib/supabase'
 
 export default function SearchScreen({
   query, setQuery,
@@ -11,6 +10,13 @@ export default function SearchScreen({
   loading, error,
   onSearch, onChecklist,
 }) {
+  const [counties, setCounties] = useState([])
+
+  useEffect(() => {
+    getDistinctCounties()
+      .then(setCounties)
+      .catch(() => {/* silently ignore — section simply stays empty */})
+  }, [])
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4
                      bg-gradient-to-br from-slate-50 to-slate-100 pt-14">
@@ -120,24 +126,26 @@ export default function SearchScreen({
             What Do I Need To Submit?
           </button>
 
-          {/* City badges */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              Supported Cities
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {CITY_BADGES.map((city) => (
-                <span
-                  key={city}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-                             bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20"
-                >
-                  <MapPin size={11} />
-                  {city}
-                </span>
-              ))}
+          {/* County badges — populated dynamically from Supabase */}
+          {counties.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                Supported Counties
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {counties.map((county) => (
+                  <span
+                    key={county}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+                               bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20"
+                  >
+                    <MapPin size={11} />
+                    {county}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
