@@ -1,6 +1,7 @@
 'use client'
 
-import { Building2, LayoutDashboard, FolderOpen, Globe, Settings, Menu, X, LogIn, LogOut, User } from 'lucide-react'
+import Link from 'next/link'
+import { Building2, LayoutDashboard, FolderOpen, Globe, Settings, Menu, X, LogIn, LogOut, User, Users } from 'lucide-react'
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard' },
@@ -9,7 +10,7 @@ const NAV_ITEMS = [
   { icon: Settings,        label: 'Settings' },
 ]
 
-export default function NavBar({ onLogoClick, sidebarOpen, setSidebarOpen, user, onSignIn, onSignOut }) {
+export default function NavBar({ onLogoClick, sidebarOpen, setSidebarOpen, user, onSignIn, onSignOut, isAdmin }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm">
       <div className="flex items-center justify-between h-14 px-4 md:px-6">
@@ -41,6 +42,17 @@ export default function NavBar({ onLogoClick, sidebarOpen, setSidebarOpen, user,
               </button>
             ))}
           </nav>
+
+          {isAdmin && (
+            <Link
+              href="/admin/users"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium
+                         text-slate-600 hover:text-[#1e3a5f] hover:bg-slate-100 transition-colors"
+            >
+              <Users size={15} />
+              Users
+            </Link>
+          )}
 
           <div className="ml-3 pl-3 border-l border-slate-200">
             {user ? (
@@ -96,6 +108,17 @@ export default function NavBar({ onLogoClick, sidebarOpen, setSidebarOpen, user,
               {label}
             </button>
           ))}
+          {isAdmin && (
+            <Link
+              href="/admin/users"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 w-full px-5 py-3 text-sm font-medium
+                         text-slate-700 hover:bg-slate-50 border-b border-slate-100"
+            >
+              <Users size={16} className="text-[#1e3a5f]" />
+              Users
+            </Link>
+          )}
           {/* Mobile auth row */}
           <div className="px-5 py-3">
             {user ? (

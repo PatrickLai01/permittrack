@@ -7,7 +7,7 @@ import ResultsScreen from '../components/ResultsScreen'
 import AuthModal    from '../components/AuthModal'
 import { ChecklistFlow } from '../components/Checklist'
 import { searchPermit } from '../lib/supabase'
-import { getSession, onAuthStateChange, signOut } from '../lib/auth'
+import { getSession, onAuthStateChange, signOut, getUserProfile } from '../lib/auth'
 import { logSearch } from '../lib/searchLog'
 
 export default function Page() {
@@ -17,15 +17,26 @@ export default function Page() {
   const [showAuth,    setShowAuth]    = useState(false)
 
   // ── Auth state ───────────────────────────────────────────────────────────
-  const [user, setUser] = useState(null)
+  const [user,    setUser]    = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     // Hydrate from stored session on first load
-    getSession().then((session) => setUser(session?.user ?? null))
+    getSession().then((session) => {
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        getUserProfile().then((p) => setIsAdmin(p?.role === 'admin'))
+      }
+    })
 
     // Keep in sync with auth events (sign in, sign out, token refresh)
     const unsubscribe = onAuthStateChange((session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        getUserProfile().then((p) => setIsAdmin(p?.role === 'admin'))
+      } else {
+        setIsAdmin(false)
+      }
     })
     return unsubscribe
   }, [])
@@ -99,6 +110,7 @@ export default function Page() {
         user={user}
         onSignIn={() => setShowAuth(true)}
         onSignOut={handleSignOut}
+        isAdmin={isAdmin}
       />
 
       {screen === 'search' && (
