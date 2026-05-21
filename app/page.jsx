@@ -1,16 +1,34 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import NavBar from '../components/NavBar'
+import { useState, useCallback, useEffect } from 'react'
+import NavBar       from '../components/NavBar'
 import SearchScreen from '../components/SearchScreen'
 import ResultsScreen from '../components/ResultsScreen'
+import AuthModal    from '../components/AuthModal'
 import { ChecklistFlow } from '../components/Checklist'
 import { searchPermit } from '../lib/supabase'
+import { getSession, onAuthStateChange, signOut } from '../lib/auth'
+import { logSearch } from '../lib/searchLog'
 
 export default function Page() {
   // ── Shared UI state ──────────────────────────────────────────────────────
   const [screen,      setScreen]      = useState('search')   // 'search' | 'results' | 'checklist'
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showAuth,    setShowAuth]    = useState(false)
+
+  // ── Auth state ───────────────────────────────────────────────────────────
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    // Hydrate from stored session on first load
+    getSession().then((session) => setUser(session?.user ?? null))
+
+    // Keep in sync with auth events (sign in, sign out, token refresh)
+    const unsubscribe = onAuthStateChange((session) => {
+      setUser(session?.user ?? null)
+    })
+    return unsubscribe
+  }, [])
 
   // ── Search state ─────────────────────────────────────────────────────────
   const [query,   setQuery]   = useState('')
@@ -31,6 +49,14 @@ export default function Page() {
     try {
       const result = await searchPermit(q, cityId || null)
 
+      // Fire-and-forget search log — always runs regardless of result
+      logSearch({
+        query:          q,
+        municipalityId: cityId || null,
+        result,
+        userId:         user?.id ?? null,
+      })
+
       if (result) {
         setPermit(result)
         setScreen('results')
@@ -44,7 +70,7 @@ export default function Page() {
     } finally {
       setLoading(false)
     }
-  }, [query, cityId])
+  }, [query, cityId, user])
 
   const handleBack = useCallback(() => {
     setScreen('search')
@@ -57,6 +83,11 @@ export default function Page() {
     setSidebarOpen(false)
   }, [])
 
+  const handleSignOut = useCallback(async () => {
+    await signOut()
+    setUser(null)
+  }, [])
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -65,6 +96,9 @@ export default function Page() {
         onLogoClick={handleBack}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        user={user}
+        onSignIn={() => setShowAuth(true)}
+        onSignOut={handleSignOut}
       />
 
       {screen === 'search' && (
@@ -83,6 +117,16 @@ export default function Page() {
 
       {screen === 'checklist' && (
         <ChecklistFlow onBack={handleBack} />
+      )}
+
+      {showAuth && (
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onSuccess={(signedInUser) => {
+            setUser(signedInUser)
+            setShowAuth(false)
+          }}
+        />
       )}
     </div>
   )
