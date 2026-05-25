@@ -72,8 +72,7 @@ export default function Page() {
         setPermit(result)
         setScreen('results')
       } else {
-        const cityHint = cityId ? '' : ' Try selecting a specific city to narrow your search.'
-        setError(`No permit found matching "${q}".${cityHint}`)
+        setError(`No permit found matching "${q}".`)
       }
     } catch (err) {
       console.error('Search error:', err)
@@ -116,7 +115,6 @@ export default function Page() {
       {screen === 'search' && (
         <SearchScreen
           query={query}       setQuery={setQuery}
-          cityId={cityId}     setCityId={setCityId}
           loading={loading}   error={error}
           onSearch={handleSearch}
           onChecklist={handleChecklist}

@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Building2, Search, MapPin, ClipboardList, Loader2, ChevronDown } from 'lucide-react'
-import { CITIES, getDistinctMunicipalities } from '../lib/supabase'
+import { Building2, Search, MapPin, ClipboardList, Loader2 } from 'lucide-react'
+import { getDistinctMunicipalities } from '../lib/supabase'
 
 export default function SearchScreen({
   query, setQuery,
-  cityId, setCityId,
   loading, error,
   onSearch, onChecklist,
 }) {
@@ -39,30 +38,6 @@ export default function SearchScreen({
         {/* Search card */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 md:p-8">
 
-          {/* City selector */}
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            City
-          </label>
-          <div className="relative mb-4">
-            <select
-              value={cityId}
-              onChange={(e) => setCityId(e.target.value)}
-              className="w-full appearance-none pl-4 pr-10 py-3.5 rounded-xl border border-slate-300
-                         bg-white text-slate-800 text-sm cursor-pointer
-                         focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent
-                         transition-all"
-            >
-              <option value="">All Cities</option>
-              {CITIES.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            />
-          </div>
-
           {/* Permit / address input */}
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
             Permit Number or Address
@@ -90,6 +65,28 @@ export default function SearchScreen({
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700
                             text-sm font-medium animate-fade-in">
               {error}
+            </div>
+          )}
+
+          {/* Municipalities — populated dynamically from Supabase permits table */}
+          {municipalities.length > 0 && (
+            <div className="mb-6 pb-6 border-b border-slate-100">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                Supported Municipalities
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {municipalities.map(({ name, count }) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+                               bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20
+                               hover:bg-[#1e3a5f]/12 transition-colors"
+                  >
+                    <MapPin size={11} />
+                    {name} <span className="text-slate-500">({count.toLocaleString()})</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
@@ -125,28 +122,6 @@ export default function SearchScreen({
             <ClipboardList size={16} />
             What Do I Need To Submit?
           </button>
-
-          {/* Municipalities — populated dynamically from Supabase permits table */}
-          {municipalities.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-slate-100">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Supported Municipalities
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {municipalities.map(({ name, count }) => (
-                  <span
-                    key={name}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-                               bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20
-                               hover:bg-[#1e3a5f]/12 transition-colors"
-                  >
-                    <MapPin size={11} />
-                    {name} <span className="text-slate-500">({count.toLocaleString()})</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
