@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Building2, Search, MapPin, ClipboardList, Loader2, ChevronDown } from 'lucide-react'
-import { CITIES, getDistinctCounties } from '../lib/supabase'
+import { CITIES, getDistinctMunicipalities } from '../lib/supabase'
 
 export default function SearchScreen({
   query, setQuery,
@@ -10,11 +10,11 @@ export default function SearchScreen({
   loading, error,
   onSearch, onChecklist,
 }) {
-  const [counties, setCounties] = useState([])
+  const [municipalities, setMunicipalities] = useState([])
 
   useEffect(() => {
-    getDistinctCounties()
-      .then(setCounties)
+    getDistinctMunicipalities()
+      .then(setMunicipalities)
       .catch(() => {/* silently ignore — section simply stays empty */})
   }, [])
   return (
@@ -126,21 +126,22 @@ export default function SearchScreen({
             What Do I Need To Submit?
           </button>
 
-          {/* County badges — populated dynamically from Supabase */}
-          {counties.length > 0 && (
+          {/* Municipalities — populated dynamically from Supabase permits table */}
+          {municipalities.length > 0 && (
             <div className="mt-6 pt-5 border-t border-slate-100">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Supported Counties
+                Supported Municipalities
               </p>
               <div className="flex flex-wrap gap-2">
-                {counties.map((county) => (
+                {municipalities.map(({ name, count }) => (
                   <span
-                    key={county}
+                    key={name}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-                               bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20"
+                               bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20
+                               hover:bg-[#1e3a5f]/12 transition-colors"
                   >
                     <MapPin size={11} />
-                    {county}
+                    {name} <span className="text-slate-500">({count.toLocaleString()})</span>
                   </span>
                 ))}
               </div>
