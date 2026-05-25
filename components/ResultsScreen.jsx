@@ -294,7 +294,7 @@ function Sidebar() {
 
 export default function ResultsScreen({ permit, onBack }) {
   const timeline = useMemo(() => buildTimeline(permit), [permit])
-  const cityName = getCityName(permit.city_id)
+  const cityName = getCityName(permit.municipality_id)
   const ss = statusStyle(permit.status)
 
   return (

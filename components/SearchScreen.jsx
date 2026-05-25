@@ -149,7 +149,7 @@ export default function SearchScreen({
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          Live data — 59,847 permits across Bay Area cities
+          Live data — 50,263 permits across Bay Area cities
         </p>
       </div>
     </main>
