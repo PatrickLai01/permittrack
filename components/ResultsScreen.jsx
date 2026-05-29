@@ -2,37 +2,11 @@
 
 import { useMemo } from 'react'
 import {
-  Search, CheckCircle2, Clock, AlertTriangle, ChevronRight,
-  FileText, Calendar, MapPin, Hash, LayoutDashboard, FolderOpen,
-  Globe, Settings, Phone, ArrowRight,
+  Search, CheckCircle2, ChevronRight,
+  FileText, Calendar, MapPin, LayoutDashboard, FolderOpen,
+  Globe, Settings,
 } from 'lucide-react'
 import { getCityName } from '../lib/supabase'
-
-// ── Hardcoded sections (same for all permits) ─────────────────────────────────
-
-const HARDCODED_DOCS = [
-  { icon: 'check', label: 'Building Permit Application',        detail: 'Submitted 04/01/2026' },
-  { icon: 'check', label: 'Mechanical Permit (MEP)',            detail: 'Submitted 04/01/2026' },
-  { icon: 'check', label: 'Title 24 / CF-1R Energy Report',     detail: 'Submitted 04/08/2026' },
-  { icon: 'check', label: 'Equipment Specifications',           detail: 'Submitted 04/08/2026' },
-  { icon: 'warn',  label: 'HERS Verification',                  detail: 'Required before Final Inspection' },
-  { icon: 'clock', label: 'Final Inspection Request',           detail: 'Not yet submitted' },
-]
-
-const HARDCODED_COMMENTS = [
-  {
-    date: 'April 15, 2026',
-    status: 'resolved',
-    original: 'Verify refrigerant charge per Title 24 HERS protocol CF-2R-MCH-01',
-    plain: 'Inspector needs proof that refrigerant was measured correctly during installation. Your HVAC tech needs to complete a HERS verification form.',
-  },
-  {
-    date: 'April 22, 2026',
-    status: 'action',
-    original: 'Final inspection required prior to closeout. Schedule with Building Division.',
-    plain: 'You need to book a final inspection before this permit can be closed out. Call the Building Division to schedule.',
-  },
-]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -186,76 +160,6 @@ function TimelineStep({ step, index, total }) {
   )
 }
 
-function DocRow({ doc }) {
-  const icons = {
-    check: <CheckCircle2 size={17} className="text-[#22c55e] flex-shrink-0 mt-0.5" strokeWidth={2.5} />,
-    warn:  <AlertTriangle size={17} className="text-amber-500 flex-shrink-0 mt-0.5" strokeWidth={2.5} />,
-    clock: <Clock size={17} className="text-slate-400 flex-shrink-0 mt-0.5" strokeWidth={2} />,
-  }
-  return (
-    <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
-      {icons[doc.icon]}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-800 leading-snug">{doc.label}</p>
-        <p className={`text-xs mt-0.5
-          ${doc.icon === 'check' ? 'text-slate-500' : ''}
-          ${doc.icon === 'warn'  ? 'text-amber-600 font-medium' : ''}
-          ${doc.icon === 'clock' ? 'text-slate-400' : ''}`}
-        >
-          {doc.detail}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function CommentCard({ comment }) {
-  const isResolved = comment.status === 'resolved'
-  return (
-    <div className={`rounded-xl border p-4 md:p-5
-      ${isResolved ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}
-    >
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Calendar size={13} className="text-slate-400" />
-          <span className="text-xs text-slate-500 font-medium">{comment.date}</span>
-        </div>
-        {isResolved ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full
-                           bg-green-100 border border-green-300 text-green-700 text-xs font-bold">
-            <CheckCircle2 size={11} strokeWidth={2.5} /> Resolved
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full
-                           bg-amber-100 border border-amber-300 text-amber-700 text-xs font-bold">
-            <AlertTriangle size={11} strokeWidth={2.5} /> Action Required
-          </span>
-        )}
-      </div>
-
-      <div className="mb-3 bg-white/70 rounded-lg p-3 border border-slate-200">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Original Comment</p>
-        <p className="text-xs text-slate-600 italic leading-relaxed">"{comment.original}"</p>
-      </div>
-
-      <div className={`rounded-lg p-3 ${isResolved ? 'bg-green-100/60' : 'bg-amber-100/60'}`}>
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-slate-500">Plain English</p>
-        <p className="text-sm text-slate-700 leading-relaxed">{comment.plain}</p>
-      </div>
-
-      {!isResolved && (
-        <button className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg
-                           bg-[#1e3a5f] text-white text-sm font-semibold
-                           hover:bg-[#254d7a] active:scale-[0.98] transition-all shadow-sm">
-          <Phone size={14} />
-          Schedule Inspection
-          <ArrowRight size={14} />
-        </button>
-      )}
-    </div>
-  )
-}
-
 // ── Desktop sidebar ───────────────────────────────────────────────────────────
 
 function Sidebar() {
@@ -367,30 +271,6 @@ export default function ResultsScreen({ permit, onBack }) {
             <div className="flex items-start mt-6 mb-2 overflow-x-auto pb-2">
               {timeline.map((step, i) => (
                 <TimelineStep key={step.label} step={step} index={i} total={timeline.length} />
-              ))}
-            </div>
-          </div>
-
-          {/* ── Documents ───────────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-5 animate-slide-up-2">
-            <SectionHeader title="Required Documents" subtitle={`${cityName} HVAC`} />
-            <div className="mt-4">
-              {HARDCODED_DOCS.map((doc) => (
-                <DocRow key={doc.label} doc={doc} />
-              ))}
-            </div>
-            <p className="text-xs text-slate-400 mt-4 flex items-start gap-1.5">
-              <span className="mt-0.5">ℹ️</span>
-              Document requirements verified against {cityName} Building Division standards.
-            </p>
-          </div>
-
-          {/* ── Inspector comments ───────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-8 animate-slide-up-3">
-            <SectionHeader title="Inspector Comments" subtitle="Plain English" />
-            <div className="mt-4 flex flex-col gap-4">
-              {HARDCODED_COMMENTS.map((c, i) => (
-                <CommentCard key={i} comment={c} />
               ))}
             </div>
           </div>
