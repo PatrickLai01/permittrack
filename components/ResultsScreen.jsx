@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
 import {
   Search, CheckCircle2, ChevronRight,
   FileText, Calendar, MapPin, LayoutDashboard, FolderOpen,
@@ -9,13 +8,6 @@ import {
 import { getCityName } from '../lib/supabase'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function fmt(dateStr) {
-  if (!dateStr) return null
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  })
-}
 
 function fmtShort(dateStr) {
   if (!dateStr) return null
@@ -37,53 +29,6 @@ function statusStyle(status) {
   return { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700' }
 }
 
-function buildTimeline(permit) {
-  const a = !!permit.applied_date
-  const iv = !!permit.issued_date
-  const f = !!permit.finalized_date
-
-  // Which step is "current"?
-  let curr = 0
-  if (a && !iv && !f) curr = 1   // submitted, now in plan check
-  if (iv && !f)       curr = 2   // issued
-  if (f)              curr = 4   // fully finaled
-
-  const state = (idx) => idx < curr ? 'done' : idx === curr ? 'current' : 'pending'
-
-  return [
-    {
-      label: 'Submitted',
-      date: fmt(permit.applied_date),
-      state: a ? state(0) : 'pending',
-      note: a ? null : 'Pending',
-    },
-    {
-      label: 'Plan Check',
-      date: null,
-      state: state(1),
-      note: curr === 1 ? 'In Review' : curr < 1 ? 'Pending' : null,
-    },
-    {
-      label: 'Issued',
-      date: fmt(permit.issued_date),
-      state: iv ? state(2) : 'pending',
-      note: iv ? null : 'Pending',
-    },
-    {
-      label: 'Inspection',
-      date: null,
-      state: f ? 'done' : 'pending',
-      note: f ? null : iv ? 'Schedule Required' : 'Pending',
-    },
-    {
-      label: 'Finaled',
-      date: fmt(permit.finalized_date),
-      state: f ? 'current' : 'pending',
-      note: f ? null : 'Pending',
-    },
-  ]
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function InfoField({ icon: Icon, label, value }) {
@@ -94,67 +39,6 @@ function InfoField({ icon: Icon, label, value }) {
       <div>
         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
         <p className="text-sm font-medium text-slate-800 mt-0.5">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-function SectionHeader({ title, subtitle }) {
-  return (
-    <h2 className="text-base font-bold text-[#1e3a5f] leading-tight">
-      {title}
-      {subtitle && <span className="text-slate-400 font-normal"> — {subtitle}</span>}
-    </h2>
-  )
-}
-
-function TimelineStep({ step, index, total }) {
-  const isDone    = step.state === 'done'
-  const isCurrent = step.state === 'current'
-  const isLast    = index === total - 1
-
-  return (
-    <div className="flex flex-col items-center flex-1 relative">
-      {/* Left connector */}
-      {index > 0 && (
-        <div className={`absolute top-5 right-1/2 left-0 h-0.5 -translate-y-1/2
-          ${isDone || isCurrent ? 'bg-[#22c55e]' : 'bg-slate-200'}`}
-        />
-      )}
-      {/* Right connector */}
-      {!isLast && (
-        <div className={`absolute top-5 left-1/2 right-0 h-0.5 -translate-y-1/2
-          ${isDone ? 'bg-[#22c55e]' : 'bg-slate-200'}`}
-        />
-      )}
-
-      {/* Circle */}
-      <div className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all
-        ${isDone    ? 'bg-[#22c55e] border-[#22c55e] shadow-md shadow-green-200' : ''}
-        ${isCurrent ? 'bg-[#1e3a5f] border-[#1e3a5f] shadow-md shadow-blue-200' : ''}
-        ${!isDone && !isCurrent ? 'bg-white border-slate-300' : ''}`}
-      >
-        {isDone    && <CheckCircle2 size={18} className="text-white" strokeWidth={2.5} />}
-        {isCurrent && <div className="w-3 h-3 rounded-full bg-white" />}
-        {!isDone && !isCurrent && <div className="w-3 h-3 rounded-full bg-slate-300" />}
-      </div>
-
-      {/* Label */}
-      <div className="mt-3 text-center px-1">
-        <p className={`text-xs font-bold leading-tight
-          ${isDone ? 'text-[#22c55e]' : isCurrent ? 'text-[#1e3a5f]' : 'text-slate-400'}`}
-        >
-          {step.label}
-        </p>
-        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-          {step.date ?? step.note}
-        </p>
-        {isCurrent && (
-          <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold
-                           bg-[#1e3a5f] text-white uppercase tracking-wide">
-            Current
-          </span>
-        )}
       </div>
     </div>
   )
@@ -197,7 +81,6 @@ function Sidebar() {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function ResultsScreen({ permit, onBack }) {
-  const timeline = useMemo(() => buildTimeline(permit), [permit])
   const cityName = getCityName(permit.municipality_id)
   const ss = statusStyle(permit.status)
 
@@ -263,16 +146,6 @@ export default function ResultsScreen({ permit, onBack }) {
                 <p className="text-sm text-slate-700 leading-relaxed">{permit.description}</p>
               </div>
             )}
-          </div>
-
-          {/* ── Timeline ────────────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-5 animate-slide-up-1">
-            <SectionHeader title="Permit Status Timeline" />
-            <div className="flex items-start mt-6 mb-2 overflow-x-auto pb-2">
-              {timeline.map((step, i) => (
-                <TimelineStep key={step.label} step={step} index={i} total={timeline.length} />
-              ))}
-            </div>
           </div>
 
           <footer className="text-center py-4 text-xs text-slate-400 border-t border-slate-200">
