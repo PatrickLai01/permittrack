@@ -117,7 +117,6 @@ export default function Page() {
           query={query}       setQuery={setQuery}
           loading={loading}   error={error}
           onSearch={handleSearch}
-          onChecklist={handleChecklist}
         />
       )}
 

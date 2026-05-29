@@ -1,21 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Building2, Search, MapPin, ClipboardList, Loader2 } from 'lucide-react'
-import { getDistinctMunicipalities } from '../lib/supabase'
+import { Building2, Search, Loader2 } from 'lucide-react'
 
 export default function SearchScreen({
   query, setQuery,
   loading, error,
-  onSearch, onChecklist,
+  onSearch,
 }) {
-  const [municipalities, setMunicipalities] = useState([])
-
-  useEffect(() => {
-    getDistinctMunicipalities()
-      .then(setMunicipalities)
-      .catch(() => {/* silently ignore — section simply stays empty */})
-  }, [])
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4
                      bg-gradient-to-br from-slate-50 to-slate-100 pt-14">
@@ -68,28 +60,6 @@ export default function SearchScreen({
             </div>
           )}
 
-          {/* Municipalities — populated dynamically from Supabase permits table */}
-          {municipalities.length > 0 && (
-            <div className="mb-6 pb-6 border-b border-slate-100">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Supported Municipalities
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {municipalities.map(({ name, count }) => (
-                  <span
-                    key={name}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-                               bg-[#1e3a5f]/8 text-[#1e3a5f] border border-[#1e3a5f]/20
-                               hover:bg-[#1e3a5f]/12 transition-colors"
-                  >
-                    <MapPin size={11} />
-                    {name} <span className="text-slate-500">({count.toLocaleString()})</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Primary CTA */}
           <button
             onClick={onSearch}
@@ -110,17 +80,6 @@ export default function SearchScreen({
                 Look Up Permit
               </>
             )}
-          </button>
-
-          {/* Secondary CTA */}
-          <button
-            onClick={onChecklist}
-            className="w-full mt-3 py-3.5 rounded-xl border-2 border-[#1e3a5f] text-[#1e3a5f]
-                       hover:bg-[#1e3a5f]/6 active:scale-[0.98] font-semibold text-sm tracking-wide
-                       transition-all duration-150 flex items-center justify-center gap-2"
-          >
-            <ClipboardList size={16} />
-            What Do I Need To Submit?
           </button>
         </div>
 
